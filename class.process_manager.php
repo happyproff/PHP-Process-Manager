@@ -3,7 +3,6 @@
 
 
 /**
- * TODO: make output HTML-free (for cli SAPI)
  * TODO: add logging by psr-3 logger passed in constructor
  * TODO: make psr-0 compatible (namespaces, one class per file)
  * TODO: make psr-2 compatible
@@ -37,13 +36,7 @@ class Processmanager {
 			// Fill up the slots
 			while (($this->processesRunning<$this->processes) and ($i<count($this->scripts)))
 			{
-				if($this->show_output)
-				{
-					ob_start();
-					echo "<span style='color: orange;'>Adding script: ".$this->scripts[$i]["script_name"]."</span><br />";
-					ob_flush();
-					flush();
-				}
+                $this->log('added: ' . $this->scripts[$i]['script_name']);
 				$this->running[] = new Process($this->executable, $this->root, $this->scripts[$i]["script_name"], $this->scripts[$i]["max_execution_time"]);
 				$this->processesRunning++;
 				$i++;
@@ -63,20 +56,7 @@ class Processmanager {
 
 				if (!$val->isRunning() or $val->isOverExecuted())
 				{
-					if($this->show_output)
-					{
-						ob_start();
-						if (!$val->isRunning())
-						{
-							echo "<span style='color: green;'>Done: ".$val->script."</span><br />";
-						}
-						else
-						{
-							echo "<span style='color: red;'>Killed: ".$val->script."</span><br />";
-						}
-						ob_flush();
-						flush();
-					}
+                    $this->log(($val->isRunning() ? 'killed' : 'done') . ': ' . $val->script);
 					proc_close($val->resource);
 					unset($this->running[$key]);
 					$this->processesRunning--;
@@ -84,6 +64,14 @@ class Processmanager {
 			}
 		}
 	}
+
+    function log($message)
+    {
+        if ($this->show_output) {
+            $message .= PHP_EOL;
+            echo 'cli' == PHP_SAPI ? $message : nl2br($message);
+        }
+    }
 }
 
 class Process {
