@@ -31,7 +31,7 @@ class Processmanager {
 					ob_flush();
 					flush();
 				}
-				$this->running[] =& new Process($this->executable, $this->root, $this->scripts[$i]["script_name"], $this->scripts[$i]["max_execution_time"]);
+				$this->running[] = new Process($this->executable, $this->root, $this->scripts[$i]["script_name"], $this->scripts[$i]["max_execution_time"]);
 				$this->processesRunning++;
 				$i++;
 			}
@@ -90,7 +90,7 @@ class Process {
 			2 => array('pipe', 'w')
 		);
 		$this->resource    = proc_open($executable." ".$root.$this->script, $descriptorspec, $this->pipes, null, $_ENV);
-		$this->start_time = mktime();
+		$this->start_time = time();
 	}
 
 	// is still running?
@@ -103,7 +103,7 @@ class Process {
 	// long execution time, proccess is going to be killer
 	function isOverExecuted()
 	{
-		if ($this->start_time+$this->max_execution_time<mktime()) return true;
+		if ($this->start_time+$this->max_execution_time<time()) return true;
 		else return false;
 	}
 }
