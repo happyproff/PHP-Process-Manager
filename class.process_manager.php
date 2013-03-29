@@ -7,6 +7,7 @@
  * TODO: add logging by psr-3 logger passed in constructor
  * TODO: make psr-0 compatible (namespaces, one class per file)
  * TODO: make psr-2 compatible
+ * TODO: create composer package
  */
 
 
