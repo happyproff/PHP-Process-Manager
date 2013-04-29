@@ -6,6 +6,10 @@ namespace PHPProcessManager;
 
 
 
+require_once 'Process.php';
+
+
+
 class Manager {
 
 
@@ -19,6 +23,7 @@ class Manager {
     protected $running = []; //the list of scripts currently running
     protected $scripts = []; //the list of scripts - populated by addScript
     protected $processesRunning = 0; //count of processes running
+    protected $start = 0;
 
 
 
@@ -34,22 +39,13 @@ class Manager {
     
     
     public function exec () {
+
+        $this->start = time();
+
+        $this->log('starting with ' . count($this->scripts) . ' tasks');
         
         $i = 0;
         for(;;) {
-
-            // Fill up the slots
-            while (($this->processesRunning < $this->processes) and ($i < count($this->scripts))) {
-                $this->log('added: ' . $this->scripts[$i]['script_name']);
-                $this->running[] = new Process(
-                    $this->executable,
-                    $this->root,
-                    $this->scripts[$i]['script_name'],
-                    $this->scripts[$i]['max_execution_time']
-                );
-                $this->processesRunning++;
-                $i++;
-            }
 
             // Check if done
             if (($this->processesRunning == 0) and ($i >= count($this->scripts))) {
@@ -60,13 +56,30 @@ class Manager {
             sleep($this->sleep_time);
 
             // check what is done
-            foreach ($this->running as $key => $val) {
-                if (!$val->isRunning() or $val->isOverExecuted()) {
-                    $this->log(($val->isRunning() ? 'killed' : 'done') . ': ' . $val->script);
-                    proc_close($val->resource);
+            foreach ($this->running as $key => $process) {
+                /** @var Process $process */
+                $isRunning = $process->isRunning();
+                $isOverExecuted = $process->isOverExecuted();
+                if (!$isRunning or $isOverExecuted) {
+                    $script = $process->script;
+                    $this->log(($isOverExecuted ? 'killed' : 'done  ') . ' #' . $key . ' (' . $script . ')');
+                    unset($process);
                     unset($this->running[$key]);
                     $this->processesRunning--;
                 }
+            }
+
+            // Fill up the slots
+            while (($this->processesRunning < $this->processes) and ($i < count($this->scripts))) {
+                $this->log('added  #' . $i . ' (' . $this->scripts[$i]['script_name'] . ')');
+                $this->running[] = new Process(
+                    $this->executable,
+                    $this->root,
+                    $this->scripts[$i]['script_name'],
+                    $this->scripts[$i]['max_execution_time']
+                );
+                $this->processesRunning++;
+                $i++;
             }
 
         }
@@ -78,6 +91,7 @@ class Manager {
     protected function log ($message) {
 
         if ($this->show_output) {
+            $message .= ' at +' . (time() - $this->start) . ' sec';
             $message .= PHP_EOL;
             echo 'cli' == PHP_SAPI ? $message : nl2br($message);
         }
